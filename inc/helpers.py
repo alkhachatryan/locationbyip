@@ -1,46 +1,54 @@
 def show_help():
     print """
     LocationByIP  version 1.0.0
-        usage: python run.py <IP_ADDR> 
-    
+        usage: python run.py <IP_ADDR>
+
     _____________________________________________________________________
-    
+
     Visit: https://github.com/alkhachatryan/locationbyip
     """
 
 
 def get_data(ip):
     response = json.loads(urllib2.urlopen('http://ip-api.com/json/' + ip).read())
+    response_fields = [
+        ('as', 'AS'),
+        ('city', 'City'),
+        ('country', 'Country'),
+        ('countryCode', 'Country Code'),
+        ('isp', 'ISP'),
+        ('lat', 'Latitude'),
+        ('lon', 'Longitude'),
+        ('org', 'Organisation (Provider)'),
+        ('region', 'Region Code'),
+        ('regionName', 'Region Name'),
+        ('timezone', 'Timezone'),
+        ('zip', 'ZIP'),
+        ('status', 'Status')
+    ]
 
-    print bcolors.OKGREEN + "AS: " + bcolors.ENDC + response['as']
-    print bcolors.OKGREEN + "City: " + bcolors.ENDC + response['city']
-    print bcolors.OKGREEN + "Country: " + bcolors.ENDC + response['country']
-    print bcolors.OKGREEN + "Country Code: " + bcolors.ENDC + response['countryCode']
-    print bcolors.OKGREEN + "ISP: " + bcolors.ENDC + response['isp']
-    print bcolors.OKGREEN + "Latitude: " + bcolors.ENDC + str(response['lat'])
-    print bcolors.OKGREEN + "Longitude: " + bcolors.ENDC + str(response['lon'])
-    print bcolors.OKGREEN + "Organisation (Provider): " + bcolors.ENDC + response['org']
-    print bcolors.OKGREEN + "Region Code: " + bcolors.ENDC + response['region']
-    print bcolors.OKGREEN + "Region Name: " + bcolors.ENDC + response['regionName']
-    print bcolors.OKGREEN + "Timezone: " + bcolors.ENDC + response['timezone']
-    print bcolors.OKGREEN + "ZIP: " + bcolors.ENDC + str(response['zip'])
-    print bcolors.OKGREEN + "Status: " + bcolors.ENDC + response['status']
-    print bcolors.OKGREEN + "Gmap URL:" + bcolors.ENDC + " https://www.google.com/maps/@" + \
-          str(response['lat']) + "," + str(response['lon']) + ",15z \n"
+    for field, title in response_fields:
+        print format_row(title, response[field])
 
+    print format_row('Gmap URL', get_gmap_url(response['lat'], response['lon']))
+
+def get_gmap_url(lat, lon):
+    return 'https://www.google.com/maps/@%s,%s,15z' % (lat, lon)
 
 def show_error_msg():
     print 'Something went wrong. Try: python run.py --help'
 
+def format_row(title, value):
+    return '%s%s: %s%s' % (bcolors.OKGREEN, title, bcolors.ENDC, value)
 
-def validate_ip(s):
-    a = s.split('.')
-    if len(a) != 4:
-        return False
-    for x in a:
-        if not x.isdigit():
-            return False
-        i = int(x)
-        if i < 0 or i > 255:
-            return False
-    return True
+def validate_ip(addr):
+    try:  # IPv4
+        socket.inet_aton(addr)
+        return True
+    except socket.error: pass
+    try:  # IPv6
+        socket.inet_pton(socket.AF_INET6, addr)
+        return True
+    except socket.error: pass
+
+    return False
